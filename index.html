@@ -814,10 +814,10 @@
 
 <div class="sync-bar">
   <div class="sync-dot" id="sync-dot"></div>
-  <div class="sync-status" id="sync-status">Not synced — enter your code and press Connect</div>
+  <div class="sync-status" id="sync-status">Not synced — enter your code and press Sync</div>
   <input class="sync-code-input" id="sync-code" type="password" placeholder="sync code" autocomplete="off" spellcheck="false">
-  <button class="sync-btn" onclick="connectSync()">Connect</button>
-  <div class="sync-hint">Sync is manual — press Connect to pull your log, and press it again any time after logging to push updates.</div>
+  <button class="sync-btn" onclick="syncButtonClick()">Sync</button>
+  <div class="sync-hint">Sync is manual — press Sync to pull your log, and press it again any time after logging to push updates.</div>
 </div>
 
 <div class="progress-box">
@@ -1297,11 +1297,14 @@ function mergeLogs(a = {}, b = {}) {
 }
 
 // An entry counts as logged only if it isn't a tombstone and has content.
+// Also gated on hasSynced: progress stays hidden until the code is
+// re-entered and synced this session, even if it's sitting in localStorage.
 function isLogged(entry) {
-  return !!(entry && !entry.deleted && (entry.dist || entry.time));
+  return hasSynced && !!(entry && !entry.deleted && (entry.dist || entry.time));
 }
 
 let progress = loadProgress();
+let hasSynced = false;
 let activeCellId = null;
 let syncCode = localStorage.getItem(SYNC_CODE_KEY) || DEFAULT_SYNC_CODE;
 
@@ -1311,7 +1314,7 @@ function setSyncStatus(state, text) {
   document.getElementById("sync-status").textContent = text;
 }
 
-function connectSync() {
+function syncButtonClick() {
   const code = document.getElementById("sync-code").value.trim();
   if (code.length < 4) {
     setSyncStatus("err", "Code must be at least 4 characters");
@@ -1340,6 +1343,7 @@ async function syncNow() {
 
     progress = mergeLogs(progress, json.data || {});
     saveProgress(progress);
+    hasSynced = true;
     refreshAllCells();
     if (typeof refreshGymSelections === "function") refreshGymSelections();
     updateProgressBar();
@@ -1586,7 +1590,7 @@ function selectVariation(slotId, idx) {
 
 function refreshGymSelections() {
   gymDays.forEach(day => day.slots.forEach(slot => {
-    const entry = progress[gymKey(slot.id)];
+    const entry = hasSynced ? progress[gymKey(slot.id)] : null;
     const chosen = entry && !entry.deleted ? entry.variation : null;
     slot.vars.forEach((_, idx) => {
       const el = document.getElementById(`gymvar-${slot.id}-${idx}`);
@@ -1608,10 +1612,9 @@ renderGym();
 refreshAllCells();
 updateProgressBar();
 
-// No auto-sync: the page loads showing only what's cached locally.
-// Enter a code and press Connect to pull/push, and press it again
-// any time after logging to sync those changes.
-setSyncStatus("", "Not synced — enter your code and press Connect");
+// No auto-sync, and progress stays hidden (hasSynced is false) until you
+// enter a code and press Sync — even though it's cached in localStorage.
+setSyncStatus("", "Not synced — enter your code and press Sync");
 
 // Close modal on overlay click (not box click)
 document.getElementById("log-modal").addEventListener("click", (e) => {
