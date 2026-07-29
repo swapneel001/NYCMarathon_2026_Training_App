@@ -623,6 +623,7 @@
   }
   .day-cell:active { transform: scale(0.97); }
   .day-cell.cell-rest { cursor: default; }
+  .day-cell.no-log { cursor: default; }
   .day-cell.done { opacity: 0.35; }
   .day-cell.done .day-type { text-decoration: line-through; }
 
@@ -814,7 +815,7 @@
 <div class="sync-bar">
   <div class="sync-dot" id="sync-dot"></div>
   <div class="sync-status" id="sync-status">Connecting…</div>
-  <input class="sync-code-input" id="sync-code" placeholder="sync code" autocomplete="off" spellcheck="false">
+  <input class="sync-code-input" id="sync-code" type="password" placeholder="sync code" autocomplete="off" spellcheck="false">
   <button class="sync-btn" onclick="connectSync()">Connect</button>
   <div class="sync-hint">Every device using this code shares the same log. Change it here if you ever need a separate one.</div>
 </div>
@@ -1108,11 +1109,12 @@ function buildCell(info, dayLabel, dateStr, cellId) {
     cellRegistry[cellId] = { typeName, plannedDist: d || null, plannedPace: pace || null };
   }
 
-  const clickAttr = cellId ? `onclick="openModal('${cellId}')"` : "";
+  const loggable = !["gym", "cross"].includes(t);
+  const clickAttr = cellId && loggable ? `onclick="openModal('${cellId}')"` : "";
   const counts = ["easy","tempo","interval","hills","long","race"].includes(t) ? "run" : "extra";
 
-  return `<div class="day-cell ${cls}" id="cell-${cellId}" data-cellid="${cellId}" data-counts="${counts}" ${clickAttr}>
-    <div class="cell-check">✓</div>
+  return `<div class="day-cell ${cls}${loggable ? "" : " no-log"}" id="cell-${cellId}" data-cellid="${cellId}" data-counts="${counts}" ${clickAttr}>
+    ${loggable ? '<div class="cell-check">✓</div>' : ""}
     <div class="day-name">${dayLabel}</div>
     ${dateLine}
     <div class="day-type">${typeName}</div>
@@ -1343,7 +1345,7 @@ async function syncNow() {
     updateProgressBar();
 
     const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    setSyncStatus("ok", `Synced ${time} · code: ${syncCode}`);
+    setSyncStatus("ok", `Synced ${time}`);
   } catch (err) {
     setSyncStatus("err", `Offline — saved locally (${err.message})`);
   }
@@ -1477,7 +1479,7 @@ const gymPhases = [
 
 const gymDays = [
   {
-    id:"lower", cls:"lower", title:"Lower — Tuesday", sub:"Gym only · 4 days clear of Saturday's long run",
+    id:"lower", cls:"lower", title:"Lower — Monday/Tuesday", sub:"Gym only · 4 days clear of Saturday's long run",
     slots:[
       { id:"l1", name:"Single-leg strength", sets:"3 × 6–8 each leg",
         why:"Running is a single-leg sport — this transfers most directly.",
@@ -1497,7 +1499,7 @@ const gymDays = [
     ]
   },
   {
-    id:"upper", cls:"upper", title:"Upper — Friday", sub:"Gym only · legs untouched, so Saturday's long run stays fresh",
+    id:"upper", cls:"upper", title:"Upper — Thursday/Friday", sub:"Gym only · legs untouched, so Saturday's long run stays fresh",
     slots:[
       { id:"u1", name:"Horizontal pull", sets:"3 × 8–10",
         why:"Counters desk posture and holds your chest open late in a race.",

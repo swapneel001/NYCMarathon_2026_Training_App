@@ -12,24 +12,10 @@ running-focused upper/lower gym split.
 
 ## Deploy
 
-Git is **optional**. Pick one:
 
-### Option A — Vercel CLI (fastest, no Git)
-
-```bash
-npm i -g vercel
-cd marathon-tracker
-vercel          # first run: creates + links the project, gives a preview URL
-vercel --prod   # promote to production
-```
-
-Redeploy later with `vercel --prod` again. Creates a `.vercel/` folder locally
-(already gitignored).
-
-### Option B — Git + auto-deploy (best if you'll keep editing)
+### Git + auto-deploy (best if you'll keep editing)
 
 ```bash
-cd marathon-tracker
 git init
 git add .
 git commit -m "Marathon tracker"
@@ -44,16 +30,7 @@ Framework preset **Other**, no build command, no output directory.
 Every `git push` redeploys automatically. Given you'll likely tweak paces and
 distances as training goes on, this is the one I'd choose.
 
-### Option C — Vercel Drop (no Git, no CLI)
-
-Drag the folder onto [vercel.com/drop](https://vercel.com/drop).
-
-Caveat: each drop creates a **new project with a new URL**, so it's fine for a
-one-off but awkward for updates. It's also aimed primarily at static sites and
-framework projects — if the `/api` function doesn't come through, sync won't
-work and you'd fall back to A or B.
-
----
+----
 
 ## Add the database (required for sync)
 
@@ -104,13 +81,6 @@ On your phone: Share → **Add to Home Screen** for an app-like launch.
 
 ---
 
-## Security
-
-The sync code is the only thing protecting the data — there's no login — and
-it's readable in the page source of the deployed site. That's an acceptable
-trade for run data on an obscure URL, but don't reuse the pattern for anything
-sensitive. To close it off, put the deployment behind Vercel's password
-protection (Project → Settings → Deployment Protection).
 
 ---
 
