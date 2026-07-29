@@ -814,10 +814,10 @@
 
 <div class="sync-bar">
   <div class="sync-dot" id="sync-dot"></div>
-  <div class="sync-status" id="sync-status">Connecting…</div>
+  <div class="sync-status" id="sync-status">Not synced — enter your code and press Connect</div>
   <input class="sync-code-input" id="sync-code" type="password" placeholder="sync code" autocomplete="off" spellcheck="false">
   <button class="sync-btn" onclick="connectSync()">Connect</button>
-  <div class="sync-hint">Every device using this code shares the same log. Change it here if you ever need a separate one.</div>
+  <div class="sync-hint">Sync is manual — press Connect to pull your log, and press it again any time after logging to push updates.</div>
 </div>
 
 <div class="progress-box">
@@ -1411,18 +1411,16 @@ function saveLog() {
   applyProgressToCell(activeCellId);
   updateProgressBar();
   closeModal();
-  syncNow();
 }
 
 function clearLog() {
   if (!activeCellId) return;
-  // Tombstone rather than delete, so the clear syncs to other devices.
+  // Tombstone rather than delete, so the clear syncs to other devices once you sync.
   progress[activeCellId] = { deleted: true, loggedAt: new Date().toISOString() };
   saveProgress(progress);
   applyProgressToCell(activeCellId);
   updateProgressBar();
   closeModal();
-  syncNow();
 }
 
 function applyProgressToCell(cellId) {
@@ -1584,7 +1582,6 @@ function selectVariation(slotId, idx) {
 
   saveProgress(progress);
   refreshGymSelections();
-  syncNow();
 }
 
 function refreshGymSelections() {
@@ -1611,14 +1608,10 @@ renderGym();
 refreshAllCells();
 updateProgressBar();
 
-// Populate the code field and pull straight away
-document.getElementById("sync-code").value = syncCode;
-syncNow();
-
-// Re-sync when the tab regains focus, so switching devices picks up changes
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible" && syncCode) syncNow();
-});
+// No auto-sync: the page loads showing only what's cached locally.
+// Enter a code and press Connect to pull/push, and press it again
+// any time after logging to sync those changes.
+setSyncStatus("", "Not synced — enter your code and press Connect");
 
 // Close modal on overlay click (not box click)
 document.getElementById("log-modal").addEventListener("click", (e) => {
