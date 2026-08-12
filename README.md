@@ -4,9 +4,10 @@
 Sunday 1 November 2026. Includes run logging that syncs across devices, and a
 running-focused upper/lower gym split.
 
-- `index.html` — the whole app (plan, gym tab, logging UI)
+- `index.html` / `styles.css` / `script.js` — the app (plan, gym tab, logging UI)
 - `api/log.js` — serverless function backing multi-device sync
-- `package.json` — only there to mark the function as ESM
+- `lib/mergeLogs.js` — merge logic shared by `script.js` and `api/log.js`
+- `package.json` — only there to mark these files as ESM
 
 ---
 
@@ -56,16 +57,6 @@ browser and the sync bar shows an offline error.
 
 ---
 
-## Devices
-
-The sync code is preset to `swapneel_nycm_2026`, so any device that opens the
-site joins the same log automatically. Change it in the sync bar if you ever
-want a separate dataset.
-
-On your phone: Share → **Add to Home Screen** for an app-like launch.
-
----
-
 ## How syncing works
 
 - Every entry carries a `loggedAt` timestamp.
@@ -75,12 +66,10 @@ On your phone: Share → **Add to Home Screen** for an app-like launch.
 - Clearing a run writes a tombstone rather than deleting it, so the clear
   propagates instead of being resurrected by a stale device.
 - `localStorage` is an offline cache — log a run with no signal and it saves
-  locally, then pushes on the next sync (returning to the tab triggers one).
+  locally, then pushes the next time you press Sync. Sync is manual only,
+  never automatic.
 - Gym variation selections sync too, under `gym:*` keys, kept separate so they
   never count toward run progress.
-
----
-
 
 ---
 

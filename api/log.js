@@ -5,6 +5,8 @@
 //   UPSTASH_REDIS_REST_URL   | KV_REST_API_URL
 //   UPSTASH_REDIS_REST_TOKEN | KV_REST_API_TOKEN
 
+import { mergeLogs } from "../lib/mergeLogs.js";
+
 const REDIS_URL =
   process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const REDIS_TOKEN =
@@ -37,24 +39,6 @@ function keyFor(code) {
     .replace(/[^a-z0-9_-]/g, "");
   if (clean.length < 4 || clean.length > 64) return null;
   return `marathon:log:${clean}`;
-}
-
-// Merge two logs entry-by-entry, newest loggedAt wins.
-// Cleared entries are kept as tombstones so a delete on one device
-// propagates instead of being resurrected by a stale copy.
-function mergeLogs(a = {}, b = {}) {
-  const out = { ...a };
-  for (const [cellId, entry] of Object.entries(b)) {
-    const existing = out[cellId];
-    if (!existing) {
-      out[cellId] = entry;
-      continue;
-    }
-    const tExisting = Date.parse(existing.loggedAt || 0) || 0;
-    const tIncoming = Date.parse(entry.loggedAt || 0) || 0;
-    if (tIncoming >= tExisting) out[cellId] = entry;
-  }
-  return out;
 }
 
 export default async function handler(req, res) {
