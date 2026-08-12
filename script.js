@@ -180,13 +180,14 @@ function buildCell(info, dayLabel, dateStr, cellId) {
   const detailLine = detail ? `<div class="day-detail">${detail}</div>`: "";
   const noteLine   = info.note ? `<div class="day-detail">${info.note}</div>` : "";
 
+  const counts = ["easy","tempo","interval","hills","long","race"].includes(t) ? "run" : "extra";
+
   if (cellId) {
-    cellRegistry[cellId] = { typeName, plannedDist: d || null, plannedPace: pace || null };
+    cellRegistry[cellId] = { typeName, plannedDist: d || null, plannedPace: pace || null, counts };
   }
 
   const loggable = !["gym", "cross"].includes(t);
   const clickAttr = cellId && loggable ? `onclick="openModal('${cellId}')"` : "";
-  const counts = ["easy","tempo","interval","hills","long","race"].includes(t) ? "run" : "extra";
 
   return `<div class="day-cell ${cls}${loggable ? "" : " no-log"}" id="cell-${cellId}" data-cellid="${cellId}" data-counts="${counts}" ${clickAttr}>
     ${loggable ? '<div class="cell-check">✓</div>' : ""}
@@ -313,8 +314,8 @@ weeks.forEach((w, i) => {
           <div class="week-meta-value long-col">${longDist}</div>
         </div>
         <div class="week-meta-item">
-          <div class="week-meta-label">Total</div>
-          <div class="week-meta-value total-col">${wTotal} km</div>
+          <div class="week-meta-label">Run / Planned</div>
+          <div class="week-meta-value total-col" id="week-actual-${w.w}">— / ${wTotal} km</div>
         </div>
       </div>
       <div class="toggle-icon">▼</div>
@@ -410,6 +411,7 @@ async function syncNow() {
     refreshAllCells();
     if (typeof refreshGymSelections === "function") refreshGymSelections();
     updateProgressBar();
+    updateVolumeStats();
 
     const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     setSyncStatus("ok", `Synced ${time}`);
@@ -477,6 +479,7 @@ function saveLog() {
   saveProgress(progress);
   applyProgressToCell(activeCellId);
   updateProgressBar();
+  updateVolumeStats();
   closeModal();
 }
 
@@ -487,6 +490,7 @@ function clearLog() {
   saveProgress(progress);
   applyProgressToCell(activeCellId);
   updateProgressBar();
+  updateVolumeStats();
   closeModal();
 }
 
@@ -533,6 +537,39 @@ function updateProgressBar() {
   });
   document.getElementById("progress-count").textContent = `${done} / ${total}`;
   document.getElementById("progress-fill").style.width = total ? `${(done / total) * 100}%` : "0%";
+}
+
+// Actual km run so far, from logged entries on run-counting cells only
+// (gym/cross/flex/rest cells don't contribute).
+function loggedDist(cellId) {
+  const entry = progress[cellId];
+  if (!isLogged(entry)) return 0;
+  const dist = parseFloat(entry.dist);
+  return isFinite(dist) ? dist : 0;
+}
+
+function weekActualVolume(w) {
+  const days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+  let total = 0;
+  days.forEach(day => {
+    const cellId = `${w.w}-${day}`;
+    if (cellRegistry[cellId]?.counts === "run") total += loggedDist(cellId);
+  });
+  return Math.round(total * 10) / 10;
+}
+
+function totalActualVolume() {
+  return Math.round(weeks.reduce((sum, w) => sum + weekActualVolume(w), 0) * 10) / 10;
+}
+
+function updateVolumeStats() {
+  const volEl = document.getElementById("vol-run-val");
+  if (volEl) volEl.textContent = `${totalActualVolume()} km`;
+
+  weeks.forEach(w => {
+    const el = document.getElementById(`week-actual-${w.w}`);
+    if (el) el.textContent = `${weekActualVolume(w)} / ${weeklyTotal(w)} km`;
+  });
 }
 
 // ── Gym tab ──────────────────────────────────────────────────────────────────
@@ -674,6 +711,7 @@ renderGym();
 
 refreshAllCells();
 updateProgressBar();
+updateVolumeStats();
 
 // No auto-sync, and progress stays hidden (hasSynced is false) until you
 // enter a code and press Sync — even though it's cached in localStorage.
