@@ -356,7 +356,7 @@ function updateVolumeStats() {
 // ── Gym tab ──────────────────────────────────────────────────────────────────
 const gymPhases = [
   { weeks:"Weeks 1–8",   title:"Build strength", desc:"Moderately heavy, 6–8 reps, push progression. This is when lifting does the most for running economy." },
-  { weeks:"Weeks 9–14",  title:"Maintain only",  desc:"Same lifts, drop to 2 sets, cut load ~20%. Legs are handling 27–32km long runs — don't add fatigue." },
+  { weeks:"Weeks 9–14",  title:"Maintain only",  desc:"Same lifts, drop to 2 sets, cut load ~20%. Legs are handling 27–30km long runs — don't add fatigue." },
   { weeks:"Weeks 15–17", title:"Taper down",     desc:"One short full-body session a week, light or bodyweight. Last real session ~10 days out. Nothing new in race week." },
 ];
 
