@@ -1,45 +1,8 @@
-// Vercel serverless function — training log sync backed by Upstash Redis (REST).
-//
-// Env vars (either naming works — Vercel's KV integration uses KV_*,
-// the Upstash marketplace integration uses UPSTASH_*):
-//   UPSTASH_REDIS_REST_URL   | KV_REST_API_URL
-//   UPSTASH_REDIS_REST_TOKEN | KV_REST_API_TOKEN
+// Vercel serverless function — training log sync backed by Upstash Redis.
+// Read-only performance records for outside tools live in records.js.
 
 import { mergeLogs } from "../lib/mergeLogs.js";
-
-const REDIS_URL =
-  process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-const REDIS_TOKEN =
-  process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
-
-async function redis(command) {
-  if (!REDIS_URL || !REDIS_TOKEN) {
-    throw new Error("Redis env vars not configured");
-  }
-  const res = await fetch(REDIS_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${REDIS_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(command),
-  });
-  if (!res.ok) {
-    throw new Error(`Redis error ${res.status}: ${await res.text()}`);
-  }
-  return res.json();
-}
-
-// Sync codes identify a dataset. Keep them tame so they can't be used
-// to stuff arbitrary keys into Redis.
-function keyFor(code) {
-  const clean = String(code || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]/g, "");
-  if (clean.length < 4 || clean.length > 64) return null;
-  return `marathon:log:${clean}`;
-}
+import { redis, keyFor, readLog } from "../lib/redis.js";
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
@@ -54,9 +17,7 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === "GET") {
-      const { result } = await redis(["GET", key]);
-      const data = result ? JSON.parse(result) : {};
-      return res.status(200).json({ data });
+      return res.status(200).json({ data: await readLog(key) });
     }
 
     if (req.method === "POST") {
@@ -66,9 +27,7 @@ export default async function handler(req, res) {
 
       // Read-merge-write so two devices saving close together don't
       // clobber each other.
-      const { result } = await redis(["GET", key]);
-      const current = result ? JSON.parse(result) : {};
-      const merged = mergeLogs(current, incoming);
+      const merged = mergeLogs(await readLog(key), incoming);
 
       await redis(["SET", key, JSON.stringify(merged)]);
       return res.status(200).json({ data: merged });

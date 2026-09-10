@@ -6,6 +6,10 @@ running-focused upper/lower gym split.
 
 - `index.html` / `styles.css` / `script.js` — the app (plan, gym tab, logging UI)
 - `api/log.js` — serverless function backing multi-device sync
+- `api/records.js` — read-only `GET /api/records?code=<sync code>`, your
+  training history joined with the plan (planned vs actual per session) as
+  JSON, for reading from outside the app
+- `lib/planData.js` — the plan itself, shared by the page and the API
 - `lib/mergeLogs.js` — merge logic shared by `script.js` and `api/log.js`
 - `package.json` — only there to mark these files as ESM
 
